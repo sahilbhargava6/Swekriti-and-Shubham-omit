@@ -248,41 +248,37 @@ function illustrationSVG(id) {
 
 function pageHTML(ev, i) {
   if (ev.cardImage) {
-    return `<div class="book-page" data-density="soft">
-      <img class="full-card" src="${esc(ev.cardImage)}" alt="${esc(ev.title)} invitation" draggable="false">
-    </div>`;
+    return `<img class="full-card" src="${esc(ev.cardImage)}" alt="${esc(ev.title)} invitation" draggable="false">`;
   }
   const t = THEMES[ev.theme] || THEMES.haldi;
   const id = `p${i}`;
   const vars = Object.entries(t).map(([k, v]) => `--${k}:${v}`).join(';');
-  return `<div class="book-page" data-density="soft">
-    <article class="invite" style="${vars}">
-      ${decorSVG(t, id)}
-      <div class="illustration">
-        ${illustrationSVG(id)}
-        ${ev.illustration ? `<img class="art" src="${esc(ev.illustration)}" alt="" draggable="false"
-          onload="this.parentNode.classList.add('has-art')" onerror="this.remove()">` : ''}
+  return `<article class="invite" style="${vars}">
+    ${decorSVG(t, id)}
+    <div class="illustration">
+      ${illustrationSVG(id)}
+      ${ev.illustration ? `<img class="art" src="${esc(ev.illustration)}" alt="" draggable="false"
+        onload="this.parentNode.classList.add('has-art')" onerror="this.remove()">` : ''}
+    </div>
+    <div class="invite-text">
+      <p class="kicker">${esc(ev.kicker)}</p>
+      <h2 class="event-title${ev.title.length > 8 ? ' long' : ''}">${esc(ev.title)}</h2>
+      <p class="event-sub">${esc(ev.subtitle)}</p>
+      <p class="blessing">${esc(ev.blessing)}</p>
+      <svg class="flourish" viewBox="0 0 100 12" aria-hidden="true"><path d="M2 6H40M60 6H98" stroke="currentColor" stroke-width=".8" opacity=".6"/><path d="M50 1L55 6L50 11L45 6Z" fill="currentColor" opacity=".7"/></svg>
+      <div class="when">
+        <span class="side">${esc(ev.day)}</span>
+        <span class="date"><small>${esc(ev.month)}</small><b>${esc(ev.date)}</b><small>${esc(ev.year)}</small></span>
+        <span class="side">${esc(ev.time)}</span>
       </div>
-      <div class="invite-text">
-        <p class="kicker">${esc(ev.kicker)}</p>
-        <h2 class="event-title${ev.title.length > 8 ? ' long' : ''}">${esc(ev.title)}</h2>
-        <p class="event-sub">${esc(ev.subtitle)}</p>
-        <p class="blessing">${esc(ev.blessing)}</p>
-        <svg class="flourish" viewBox="0 0 100 12" aria-hidden="true"><path d="M2 6H40M60 6H98" stroke="currentColor" stroke-width=".8" opacity=".6"/><path d="M50 1L55 6L50 11L45 6Z" fill="currentColor" opacity=".7"/></svg>
-        <div class="when">
-          <span class="side">${esc(ev.day)}</span>
-          <span class="date"><small>${esc(ev.month)}</small><b>${esc(ev.date)}</b><small>${esc(ev.year)}</small></span>
-          <span class="side">${esc(ev.time)}</span>
-        </div>
-        <p class="venue">${esc(ev.venue)}<span>${esc(ev.city)}</span></p>
-        <p class="closing">${esc(ev.closing)}</p>
-      </div>
-    </article>
-  </div>`;
+      <p class="venue">${esc(ev.venue)}<span>${esc(ev.city)}</span></p>
+      <p class="closing">${esc(ev.closing)}</p>
+    </div>
+  </article>`;
 }
 
 /* =====================================================================
-   Book — FlippingBook Page Turn powered by St.PageFlip
+   Book — 3D Rolling Leaf Page Turn
    ===================================================================== */
 class Book {
   constructor(el, pagesHTML, monogram, onChange) {
@@ -290,93 +286,353 @@ class Book {
     this.onChange = onChange;
     this.cur = 0;
     this.busy = false;
+    this.monogram = monogram || 'S';
+    this.W = el.clientWidth || 370;
+    this.H = el.clientHeight || 520;
 
-    // Render page elements inside container
-    this.el.innerHTML = pagesHTML.join('');
-
-    const w = this.el.clientWidth || 370;
-    const h = this.el.clientHeight || 522;
-
-    this.stFlip = new St.PageFlip(this.el, {
-      width: Math.round(w),
-      height: Math.round(h),
-      size: 'fixed',
-      minWidth: 200,
-      maxWidth: 900,
-      minHeight: 280,
-      maxHeight: 1300,
-      drawShadow: false,
-      showCover: false,
-      usePortrait: true,
-      flippingTime: 380,
-      useMouseEvents: true,
-      swipeDistance: 25,
-      showPageCorners: true,
-      disableFlipByClick: false,
+    // Create page elements inside container
+    this.el.innerHTML = '';
+    this.pages = pagesHTML.map((html) => {
+      const p = document.createElement('section');
+      p.className = 'page';
+      p.innerHTML = html;
+      this.el.appendChild(p);
+      return p;
     });
 
-    this.stFlip.loadFromHTML(this.el.querySelectorAll('.book-page'));
+    // Cast shadow on the bottom page during a turn
+    this.underShadow = document.createElement('div');
+    this.underShadow.className = 'under-shadow';
+    this.el.appendChild(this.underShadow);
 
-    this.stFlip.on('flip', (e) => {
-      this.cur = e.data;
-      if (typeof this.onChange === 'function') {
-        this.onChange(this.cur);
-      }
-    });
+    // 4-panel 3D turning leaf
+    this.leaf = document.createElement('div');
+    this.leaf.className = 'turning-leaf';
+    this.panels = [];
 
-    this.stFlip.on('changeState', (e) => {
-      this.busy = e.data !== 'read';
-      stage.classList.toggle('is-flipping', this.busy);
-    });
+    let parent = this.leaf;
+    for (let i = 0; i < 4; i++) {
+      const panel = document.createElement('div');
+      panel.className = `leaf-panel leaf-panel-${i}`;
+
+      const front = document.createElement('div');
+      front.className = 'panel-face panel-front';
+      const frontImg = document.createElement('img');
+      frontImg.className = 'panel-img';
+      frontImg.alt = '';
+      frontImg.draggable = false;
+      const frontShade = document.createElement('div');
+      frontShade.className = 'panel-shade';
+      front.appendChild(frontImg);
+      front.appendChild(frontShade);
+
+      const back = document.createElement('div');
+      back.className = 'panel-face panel-back';
+      const backInner = document.createElement('div');
+      backInner.className = 'panel-back-inner';
+      backInner.innerHTML = `<div class="back-decor"><span class="back-monogram">${esc(this.monogram)}</span></div>`;
+      const backShade = document.createElement('div');
+      backShade.className = 'panel-shade';
+      back.appendChild(backInner);
+      back.appendChild(backShade);
+
+      panel.appendChild(front);
+      panel.appendChild(back);
+      parent.appendChild(panel);
+
+      this.panels.push({
+        el: panel,
+        frontImg,
+        frontShade,
+        backShade,
+      });
+
+      parent = panel; // Nested compound curvature
+    }
+
+    this.el.appendChild(this.leaf);
+
+    this.show(0);
+    this.bindPointer();
   }
 
   get count() {
-    return this.stFlip ? this.stFlip.getPageCount() : 0;
-  }
-
-  show(i) {
-    if (!this.stFlip) return;
-    this.cur = clamp(i, 0, this.count - 1);
-    this.stFlip.turnToPage(this.cur);
-  }
-
-  goTo(i) {
-    this.show(i);
-  }
-
-  flip(dir) {
-    if (!this.stFlip || this.busy) return;
-    if (dir === 'fwd') {
-      this.stFlip.flipNext();
-    } else {
-      this.stFlip.flipPrev();
-    }
-  }
-
-  tease() {
-    // Corner peek cue
-    if (!this.stFlip || this.busy || this.cur >= this.count - 1) return;
-    try {
-      this.stFlip.flipNext('bottom');
-    } catch (e) {
-      // ignore
-    }
+    return this.pages ? this.pages.length : 0;
   }
 
   measure() {
-    if (!this.stFlip) return;
-    try {
-      const w = this.el.clientWidth;
-      const h = this.el.clientHeight;
-      if (w && h) {
-        const s = this.stFlip.getSettings();
-        s.width = Math.round(w);
-        s.height = Math.round(h);
-      }
-      this.stFlip.update();
-    } catch (e) {
-      // ignore
+    this.W = this.el.clientWidth || 370;
+    this.H = this.el.clientHeight || 520;
+  }
+
+  show(i) {
+    this.cur = clamp(i, 0, this.count - 1);
+    this.pages.forEach((p, k) => {
+      p.classList.toggle('is-visible', k === this.cur);
+      p.style.zIndex = k === this.cur ? '1' : '0';
+    });
+    this.leaf.classList.remove('is-active');
+    this.underShadow.style.opacity = '0';
+  }
+
+  goTo(i) {
+    if (this.busy || this.cur === i || i < 0 || i >= this.count) return;
+    if (Math.abs(this.cur - i) === 1) {
+      this.flip(i > this.cur ? 'fwd' : 'back');
+    } else {
+      this.show(i);
+      if (typeof this.onChange === 'function') this.onChange(i);
     }
+  }
+
+  // Setup the turning leaf with page images
+  setupLeaf(dir, curIdx, targetIdx) {
+    const leafImgIdx = dir === 'fwd' ? curIdx : targetIdx;
+    const fromImg = this.pages[leafImgIdx] ? this.pages[leafImgIdx].querySelector('img.full-card') : null;
+    const imgSrc = fromImg ? fromImg.src : '';
+    this.panels.forEach((p) => {
+      p.frontImg.src = imgSrc;
+    });
+
+    if (dir === 'fwd') {
+      // Forward: curIdx curls away, revealing targetIdx underneath
+      this.pages.forEach((p, k) => {
+        p.classList.toggle('is-visible', k === targetIdx);
+        p.style.zIndex = k === targetIdx ? '1' : '0';
+      });
+    } else {
+      // Backward: targetIdx unrolls from left onto curIdx
+      this.pages.forEach((p, k) => {
+        p.classList.toggle('is-visible', k === curIdx);
+        p.style.zIndex = k === curIdx ? '1' : '0';
+      });
+    }
+    this.leaf.classList.add('is-active');
+  }
+
+  // Render 3D cylindrical page roll at progress p (0 = flat right, 1 = flat left)
+  renderProgress(p) {
+    p = clamp(p, 0, 1);
+    const roll = Math.sin(p * Math.PI); // curvature envelope
+
+    // 4 compound joint angles
+    const a0 = -180 * Math.pow(p, 1.25);
+    const a1 = -roll * 28 * (1 - p * 0.45);
+    const a2 = -roll * 32 * (1 - p * 0.35);
+    const a3 = -roll * 24 * (1 - p * 0.25);
+
+    this.panels[0].el.style.transform = `rotateY(${a0.toFixed(2)}deg)`;
+    this.panels[1].el.style.transform = `rotateY(${a1.toFixed(2)}deg)`;
+    this.panels[2].el.style.transform = `rotateY(${a2.toFixed(2)}deg)`;
+    this.panels[3].el.style.transform = `rotateY(${a3.toFixed(2)}deg)`;
+
+    // Curvature lighting: specular highlight rolls across the panels
+    this.panels.forEach((panel, i) => {
+      const panelCenterP = (3 - i) * 0.25;
+      const dist = Math.abs(p - panelCenterP);
+      const highlight = Math.max(0, 1 - dist * 4) * roll * 0.45;
+      const shadow = roll * (0.12 + (i / 4) * 0.18);
+
+      if (p < 0.6) {
+        panel.frontShade.style.opacity = '1';
+        panel.frontShade.style.background = `linear-gradient(to right, rgba(0,0,0,${(shadow * 0.4).toFixed(3)}) 0%, rgba(255,255,255,${highlight.toFixed(3)}) 50%, rgba(0,0,0,${shadow.toFixed(3)}) 100%)`;
+      } else {
+        panel.frontShade.style.opacity = '0';
+      }
+
+      if (p > 0.4) {
+        panel.backShade.style.opacity = '1';
+        panel.backShade.style.background = `linear-gradient(to right, rgba(0,0,0,${shadow.toFixed(3)}) 0%, rgba(255,255,255,${(highlight * 0.8).toFixed(3)}) 50%, rgba(0,0,0,${(shadow * 0.5).toFixed(3)}) 100%)`;
+      } else {
+        panel.backShade.style.opacity = '0';
+      }
+    });
+
+    // Cast shadow sweeping onto the bottom page
+    this.underShadow.style.opacity = `${(roll * 0.55).toFixed(2)}`;
+    this.underShadow.style.width = `${Math.round(40 + roll * 45)}%`;
+  }
+
+  // Smooth tween animation
+  animateTurn(fromP, toP, dur = 580, ease = easeInOut) {
+    return new Promise((resolve) => {
+      const t0 = performance.now();
+      const step = (now) => {
+        const elapsed = now - t0;
+        const t = clamp(elapsed / dur, 0, 1);
+        const p = fromP + (toP - fromP) * ease(t);
+        this.renderProgress(p);
+        if (t < 1) {
+          requestAnimationFrame(step);
+        } else {
+          resolve();
+        }
+      };
+      requestAnimationFrame(step);
+    });
+  }
+
+  async flip(dir, dur = 580) {
+    if (this.busy) return;
+    const target = dir === 'fwd' ? this.cur + 1 : this.cur - 1;
+    if (target < 0 || target >= this.count) return;
+
+    this.busy = true;
+    stage.classList.add('is-flipping');
+    this.measure();
+
+    if (dir === 'fwd') {
+      this.setupLeaf('fwd', this.cur, target);
+      await this.animateTurn(0, 1, dur, easeInOut);
+      this.show(target);
+      if (typeof this.onChange === 'function') this.onChange(target);
+    } else {
+      this.setupLeaf('back', this.cur, target);
+      await this.animateTurn(1, 0, dur, easeInOut);
+      this.show(target);
+      if (typeof this.onChange === 'function') this.onChange(target);
+    }
+
+    stage.classList.remove('is-flipping');
+    this.busy = false;
+  }
+
+  async tease() {
+    if (this.busy || this.count < 2 || this.cur >= this.count - 1) return;
+    this.busy = true;
+    this.measure();
+    this.setupLeaf('fwd', this.cur, this.cur + 1);
+    await this.animateTurn(0, 0.20, 500, easeOut);
+    await this.animateTurn(0.20, 0, 420, easeInOut);
+    this.show(this.cur);
+    this.busy = false;
+  }
+
+  bindPointer() {
+    const el = this.el;
+    let drag = null;
+
+    el.addEventListener('pointerdown', (e) => {
+      if (this.busy || state !== 'reading' || isZoomOpen) return;
+      if (e.target.closest('.carousel-arrow') || e.target.closest('.card-zoom-btn')) return;
+
+      this.measure();
+      drag = {
+        startX: e.clientX,
+        startY: e.clientY,
+        lastX: e.clientX,
+        lastT: performance.now(),
+        vx: 0,
+        active: false,
+        dir: null,
+        target: null,
+        progress: 0,
+        pointerId: e.pointerId,
+      };
+      try { el.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
+    });
+
+    el.addEventListener('pointermove', (e) => {
+      if (!drag || drag.pointerId !== e.pointerId) return;
+
+      const dx = e.clientX - drag.startX;
+      const dy = e.clientY - drag.startY;
+      const now = performance.now();
+      const dt = now - drag.lastT;
+      if (dt > 10) {
+        drag.vx = (e.clientX - drag.lastX) / dt;
+        drag.lastX = e.clientX;
+        drag.lastT = now;
+      }
+
+      if (!drag.active) {
+        const dist = Math.hypot(dx, dy);
+        if (dist > 10) {
+          if (Math.abs(dx) > Math.abs(dy) * 1.1) {
+            drag.active = true;
+            if (dx < 0) {
+              if (this.cur < this.count - 1) {
+                drag.dir = 'fwd';
+                drag.target = this.cur + 1;
+                this.setupLeaf('fwd', this.cur, drag.target);
+              } else {
+                drag = null;
+                return;
+              }
+            } else {
+              if (this.cur > 0) {
+                drag.dir = 'back';
+                drag.target = this.cur - 1;
+                this.setupLeaf('back', this.cur, drag.target);
+              } else {
+                drag = null;
+                return;
+              }
+            }
+          } else {
+            drag = null;
+            return;
+          }
+        }
+      }
+
+      if (drag && drag.active) {
+        if (drag.dir === 'fwd') {
+          drag.progress = clamp(-dx / this.W, 0, 1);
+        } else {
+          drag.progress = clamp(1 - (dx / this.W), 0, 1);
+        }
+        this.renderProgress(drag.progress);
+      }
+    });
+
+    const finish = async (e) => {
+      if (!drag || drag.pointerId !== e.pointerId) return;
+      const d = drag;
+      drag = null;
+      try { el.releasePointerCapture(e.pointerId); } catch (err) { /* ignore */ }
+
+      if (!d.active) {
+        const rect = el.getBoundingClientRect();
+        const clickX = e.clientX - rect.left;
+        if (clickX > this.W * 0.55 && this.cur < this.count - 1) {
+          await this.flip('fwd');
+        } else if (clickX < this.W * 0.45 && this.cur > 0) {
+          await this.flip('back');
+        }
+        return;
+      }
+
+      this.busy = true;
+      stage.classList.add('is-flipping');
+
+      let shouldComplete = false;
+      if (d.dir === 'fwd') {
+        shouldComplete = d.progress > 0.28 || d.vx < -0.3;
+      } else {
+        shouldComplete = d.progress < 0.72 || d.vx > 0.3;
+      }
+
+      const targetP = d.dir === 'fwd'
+        ? (shouldComplete ? 1 : 0)
+        : (shouldComplete ? 0 : 1);
+
+      const remaining = Math.abs(targetP - d.progress);
+      const dur = Math.max(180, Math.min(480, remaining * 520));
+
+      await this.animateTurn(d.progress, targetP, dur, easeOut);
+
+      const next = shouldComplete ? d.target : this.cur;
+      this.show(next);
+      if (shouldComplete && typeof this.onChange === 'function') {
+        this.onChange(next);
+      }
+      stage.classList.remove('is-flipping');
+      this.busy = false;
+    };
+
+    el.addEventListener('pointerup', finish);
+    el.addEventListener('pointercancel', finish);
   }
 }
 
@@ -838,18 +1094,6 @@ function init() {
     });
   }
 
-  // Tap left side of card to go back, tap right side to go forward (ignore buttons)
-  card.addEventListener('click', (e) => {
-    if (state !== 'reading' || !book || book.busy) return;
-    if (e.target.closest('.carousel-arrow') || e.target.closest('.card-zoom-btn')) return;
-    const rect = card.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    if (x < rect.width * 0.38) {
-      book.flip('back');
-    } else if (x > rect.width * 0.62) {
-      book.flip('fwd');
-    }
-  });
 
   // Zoom Modal controls & gestures
   if (zoomCloseBtn) zoomCloseBtn.addEventListener('click', closeZoom);
@@ -940,41 +1184,7 @@ function init() {
     }, { passive: true });
   }
 
-  // Swipe horizontally to flip pages (swipe left -> fwd, swipe right -> back)
-  // Vertical swiping and wheel will scroll the page smoothly without interception
-  let touchStartX = 0;
-  let touchStartY = 0;
-  let touchStartTime = 0;
-  let isSwipeCooldown = false;
 
-  window.addEventListener('touchstart', (e) => {
-    if (state !== 'reading' || !book || book.busy || isZoomOpen) return;
-    if (e.touches.length > 0) {
-      touchStartX = e.touches[0].clientX;
-      touchStartY = e.touches[0].clientY;
-      touchStartTime = Date.now();
-    }
-  }, { passive: true });
-
-  window.addEventListener('touchend', (e) => {
-    if (state !== 'reading' || !book || book.busy || isSwipeCooldown || isZoomOpen) return;
-    if (e.changedTouches.length > 0) {
-      const dx = e.changedTouches[0].clientX - touchStartX;
-      const dy = e.changedTouches[0].clientY - touchStartY;
-      const dt = Date.now() - touchStartTime;
-
-      // Primarily horizontal swipe of sufficient distance and reasonable speed
-      if (Math.abs(dx) > 38 && Math.abs(dx) > Math.abs(dy) * 1.25 && dt < 700) {
-        isSwipeCooldown = true;
-        if (dx < 0) {
-          book.flip('fwd');
-        } else {
-          book.flip('back');
-        }
-        setTimeout(() => { isSwipeCooldown = false; }, 420);
-      }
-    }
-  }, { passive: true });
 
   const detailsEl = $('readerDetails');
   if (detailsEl && window.ResizeObserver) {
