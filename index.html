@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f6f0e7">
+  <title>Swekriti &amp; Shubham — Wedding Invitation</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Great+Vibes&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css?v=5">
+</head>
+<body>
+  <main class="stage" id="stage">
+    <!-- Background: animated background.gif -->
+    <div class="backdrop" aria-hidden="true">
+      <img src="pages/background.gif" alt="" class="backdrop-gif">
+      <div class="petal-rain" id="petalRain"></div>
+    </div>
+
+    <div class="scene" id="scene">
+      <!-- Envelope parts are siblings of the card so the card can slot between back and front -->
+      <div class="envelope" id="envelope">
+        <div class="env-back env-part"></div>
+        <div class="env-flap env-part"><div class="flap-shape"></div></div>
+        <svg class="env-front env-part" viewBox="0 0 100 166.67" preserveAspectRatio="none" aria-hidden="true">
+          <defs>
+            <linearGradient id="pocketGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#f5d9e0"/>
+              <stop offset="1" stop-color="#f1d0d9"/>
+            </linearGradient>
+          </defs>
+          <path d="M0 0 L50 66.67 L100 0 L100 166.67 L0 166.67 Z" fill="url(#pocketGrad)"/>
+          <path d="M0 0 L50 66.67 L100 0" fill="none" stroke="#c99aaa" stroke-opacity=".55" stroke-width="1" vector-effect="non-scaling-stroke"/>
+          <path d="M0 166.67 L42 100 M100 166.67 L58 100" fill="none" stroke="#d7aebb" stroke-opacity=".35" stroke-width="1" vector-effect="non-scaling-stroke"/>
+        </svg>
+        <button class="seal" id="seal" type="button" aria-label="Open the invitation">
+          <span class="seal-half l"></span>
+          <span class="seal-half r"></span>
+        </button>
+        <p class="env-hint env-part">Tap the seal to open</p>
+      </div>
+
+      <div class="card" id="card">
+        <div class="book" id="book"></div>
+
+        <!-- Carousel navigation arrows -->
+        <button class="carousel-arrow prev is-disabled" id="carouselPrevBtn" type="button" aria-label="Previous card page" title="Previous page">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="15 18 9 12 15 6"></polyline>
+          </svg>
+        </button>
+        <button class="carousel-arrow next" id="carouselNextBtn" type="button" aria-label="Next card page" title="Next page">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
+        </button>
+
+        <!-- Card Zoom trigger button -->
+        <button class="card-zoom-btn" id="cardZoomBtn" type="button" aria-label="Zoom into card" title="Zoom into card">
+          <svg class="zoom-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            <line x1="11" y1="8" x2="11" y2="14"></line>
+            <line x1="8" y1="11" x2="14" y2="11"></line>
+          </svg>
+          <span class="zoom-btn-label">Zoom</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Music button and volume slider -->
+    <div class="music-control" id="musicControl">
+      <button class="music-btn is-muted" id="musicBtn" type="button" aria-label="Play background music">
+        <svg class="music-icon-play" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M9 18V5l12-2v13"></path>
+          <circle cx="6" cy="18" r="3"></circle>
+          <circle cx="18" cy="16" r="3"></circle>
+        </svg>
+        <svg class="music-icon-mute" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M9 18V5l12-2v13"></path>
+          <circle cx="6" cy="18" r="3"></circle>
+          <circle cx="18" cy="16" r="3"></circle>
+          <line x1="2" y1="2" x2="22" y2="22" stroke-width="2"></line>
+        </svg>
+      </button>
+      <div class="volume-slider-wrap" id="volumeWrap">
+        <svg class="vol-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+          <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+        </svg>
+        <input type="range" class="volume-slider" id="volumeSlider" min="0" max="1" step="0.01" value="0.30" aria-label="Music volume">
+      </div>
+    </div>
+    <audio id="bgMusic" src="music.mp3" loop preload="auto"></audio>
+
+    <div class="reader-ui">
+      <button class="close-btn" id="closeBtn" type="button" aria-label="Put the card back in the envelope">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 7.5h17v11h-17z M3.5 7.5l8.5 6.5 8.5-6.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+      </button>
+
+      <div class="reader-details" id="readerDetails">
+        <div class="venue-box" id="venueBox">
+          <button class="venue-head" id="venueHead" type="button" aria-expanded="false" aria-controls="venueBody">
+            <svg class="venue-pin" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11z" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="12" cy="10" r="2.3" fill="currentColor"/></svg>
+            <span class="venue-name" id="venueName"></span>
+            <span class="venue-cta" id="venueCta">View address</span>
+            <svg class="venue-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          </button>
+          <div class="venue-body" id="venueBody">
+            <div class="venue-body-inner" id="venueBodyInner"></div>
+          </div>
+        </div>
+
+        <!-- RSVP Form button - OUTSIDE the location box! -->
+        <a class="rsvp-card-btn" id="rsvpBtn" href="https://forms.gle/vEq6WfqpjbCnMzHA9" target="_blank" rel="noopener">
+          <svg class="form-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="16" y1="13" x2="8" y2="13"></line>
+            <line x1="16" y1="17" x2="8" y2="17"></line>
+          </svg>
+          <div class="rsvp-btn-text">
+            <span class="rsvp-btn-title">RSVP &amp; Guest Attendance Form ↗</span>
+            <span class="rsvp-btn-sub">Kindly confirm your presence &amp; event attendance</span>
+          </div>
+        </a>
+      </div>
+    </div>
+  </main>
+
+  <!-- Fullscreen Card Zoom Lightbox Modal -->
+  <div class="zoom-modal" id="zoomModal" aria-hidden="true" role="dialog" aria-modal="true" aria-label="Enlarged card viewer">
+    <div class="zoom-backdrop" id="zoomBackdrop"></div>
+    
+    <div class="zoom-header">
+      <div class="zoom-badge" id="zoomPageBadge">1 / 8</div>
+      <div class="zoom-controls">
+        <button class="zoom-ctrl-btn" id="zoomOutBtn" type="button" aria-label="Zoom out" title="Zoom out">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+        </button>
+        <button class="zoom-ctrl-btn zoom-scale-btn" id="zoomResetBtn" type="button" aria-label="Reset zoom to 100%" title="Reset zoom">
+          <span id="zoomLevelText">100%</span>
+        </button>
+        <button class="zoom-ctrl-btn" id="zoomInBtn" type="button" aria-label="Zoom in" title="Zoom in">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+        </button>
+        <button class="zoom-close-btn" id="zoomCloseBtn" type="button" aria-label="Close zoom viewer" title="Close (Esc)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="zoom-viewport" id="zoomViewport">
+      <div class="zoom-canvas" id="zoomCanvas">
+        <img class="zoom-image" id="zoomImage" src="" alt="Zoomed wedding invitation card" draggable="false">
+      </div>
+    </div>
+
+    <!-- Carousel arrows inside Zoom viewer -->
+    <button class="zoom-arrow prev" id="zoomPrevBtn" type="button" aria-label="Previous page">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+    </button>
+    <button class="zoom-arrow next" id="zoomNextBtn" type="button" aria-label="Next page">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+    </button>
+
+    <div class="zoom-tip">Pinch or scroll to zoom &bull; Drag to pan &bull; Double-tap to toggle zoom</div>
+  </div>
+
+  <script src="page-flip.browser.js"></script>
+  <script src="script.js?v=5"></script>
+</body>
+</html>
