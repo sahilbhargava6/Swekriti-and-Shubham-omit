@@ -300,12 +300,19 @@ body.is-reading-mode {
   transition-duration: 1.15s;
 }
 
-/* Clean Card Presentation with Natural Soft Shadow (No Borders) */
+/* Clean Card Presentation with Natural Soft Shadow & Layered Paper Stack Edge */
 .is-reading .card {
-  transform: none;
-  border-radius: 0;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  will-change: transform;
+  border-radius: 2px;
   border: none;
-  box-shadow: 0 18px 40px -10px rgba(40, 15, 10, .45), 0 4px 12px rgba(40, 15, 10, .15);
+  box-shadow:
+    0 18px 45px -10px rgba(40, 15, 10, .45),
+    0 4px 14px rgba(40, 15, 10, .18),
+    1px 1px 0 rgba(220, 206, 192, 0.85),
+    2px 2px 0 rgba(200, 185, 170, 0.75),
+    3px 3px 0 rgba(182, 166, 150, 0.65);
 }
 
 /* ---------- 3D Turning Book & Rolling Pages ---------- */
@@ -319,28 +326,61 @@ body.is-reading-mode {
   user-select: none;
   -webkit-user-select: none;
   pointer-events: none;
-  perspective: 2000px;
-  -webkit-perspective: 2000px;
+  perspective: 1800px;
+  -webkit-perspective: 1800px;
+  perspective-origin: center 48%;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  contain: layout paint;
 }
 .is-reading .book { pointer-events: auto; }
 
-.page {
+/* GPU-accelerated smooth flipping layers */
+.book .turn-page,
+.book .turn-page-wrapper {
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  will-change: transform;
+}
+
+/* Spine crease for physical book gutter */
+.book-spine {
   position: absolute;
-  inset: 0;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 22px;
+  z-index: 1000;
+  pointer-events: none;
+  background: linear-gradient(to right,
+    rgba(25, 10, 5, 0.35) 0%,
+    rgba(25, 10, 5, 0.15) 3px,
+    rgba(255, 255, 255, 0.12) 4.5px,
+    rgba(25, 10, 5, 0.06) 8px,
+    transparent 22px
+  );
+  border-left: 1px solid rgba(190, 130, 80, 0.35);
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+}
+
+/* Turn.js Book Pages */
+.book-page {
+  position: relative;
   width: 100%;
   height: 100%;
   background: #fbf6ee;
   overflow: hidden;
   box-sizing: border-box;
-  display: none;
-  pointer-events: none;
-}
-.page.is-visible {
-  display: block;
-  pointer-events: auto;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 
-.page .full-card {
+.book-page .full-card {
   width: 100%;
   height: 100%;
   object-fit: fill;
@@ -348,128 +388,18 @@ body.is-reading-mode {
   pointer-events: none;
   user-select: none;
   -webkit-user-select: none;
-}
-
-/* Cast shadow on the bottom page during a turn */
-.under-shadow {
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 60%;
-  pointer-events: none;
-  z-index: 5;
-  opacity: 0;
-  background: linear-gradient(to right, rgba(40, 20, 15, .42) 0%, rgba(40, 20, 15, .15) 35%, transparent 75%);
-  transition: opacity .08s ease;
-}
-
-/* The 3D Turning Leaf */
-.turning-leaf {
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  z-index: 10;
-  display: none;
-  transform-style: preserve-3d;
-  -webkit-transform-style: preserve-3d;
-}
-.turning-leaf.is-active { display: block; }
-
-/* 4-segment rolling panels */
-.leaf-panel {
-  position: absolute;
-  top: 0;
-  height: 100%;
-  transform-style: preserve-3d;
-  -webkit-transform-style: preserve-3d;
-  transform-origin: left center;
-  will-change: transform;
-}
-.leaf-panel-0 {
-  left: 0;
-  width: 25%;
-}
-.leaf-panel-1, .leaf-panel-2, .leaf-panel-3 {
-  left: 100%;
-  width: 100%;
-}
-
-.panel-face {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
 }
 
-.panel-front {
-  background: #fbf6ee;
-}
-
-.panel-back {
-  background: linear-gradient(135deg, #fdf8f0 0%, #f6ebdc 50%, #fdf8f0 100%);
-  transform: rotateY(180deg);
-  -webkit-transform: rotateY(180deg);
-}
-
-/* Sliced images inside each panel */
-.panel-img {
-  position: absolute;
-  top: 0;
-  height: 100%;
-  width: 400%;
-  object-fit: fill;
-  pointer-events: none;
-}
-.leaf-panel-0 .panel-front .panel-img { left: 0%; }
-.leaf-panel-1 .panel-front .panel-img { left: -100%; }
-.leaf-panel-2 .panel-front .panel-img { left: -200%; }
-.leaf-panel-3 .panel-front .panel-img { left: -300%; }
-
-/* Back face of the card: luxury gold foil border & monogram watermark */
-.panel-back-inner {
-  position: absolute;
-  top: 0;
-  height: 100%;
-  width: 400%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-sizing: border-box;
-}
-.leaf-panel-0 .panel-back .panel-back-inner { left: -300%; }
-.leaf-panel-1 .panel-back .panel-back-inner { left: -200%; }
-.leaf-panel-2 .panel-back .panel-back-inner { left: -100%; }
-.leaf-panel-3 .panel-back .panel-back-inner { left: 0%; }
-
-.back-decor {
-  position: absolute;
-  inset: 3.5%;
-  border: 1px solid rgba(195, 140, 95, .4);
-  border-radius: 2px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.back-monogram {
-  font-family: var(--script);
-  font-size: 32cqw;
-  color: rgba(190, 130, 85, .32);
-  transform: scaleX(-1);
-  text-shadow: 0 1px 2px rgba(255, 255, 255, .7);
-}
-
-/* Dynamic Curvature Lighting Shading */
-.panel-shade {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity .05s;
+/* Turn.js dynamic drop shadow */
+.book .shadow {
+  box-shadow: 0 0 20px rgba(35, 15, 10, 0.35);
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  will-change: transform;
 }
 
 /* ---------- Invitation page ---------- */
