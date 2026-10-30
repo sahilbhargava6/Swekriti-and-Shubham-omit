@@ -26,9 +26,6 @@ const CONFIG = {
       title: 'Wedding Invitation',
       cardImage: 'pages/wedding_card_pages.jpg', cardVideo: 'pages/wedding_card_pages.mp4',
       theme: 'invite',
-      venue: 'The Ritz', city: 'Moti Nagar',
-      address: 'The Ritz, Moti Nagar, New Delhi',
-      mapQuery: 'The Ritz, Moti Nagar, New Delhi',
     },
     {
       title: 'Wedding Celebration',
