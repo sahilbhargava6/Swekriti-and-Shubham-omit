@@ -309,15 +309,17 @@ class Book {
         start: (e, pageObject) => {
           this.busy = true;
           stage.classList.add('is-flipping');
-          if (pageObject && pageObject.next) {
-            this.preloadNearby(pageObject.next - 1);
+        },
+        end: (e, pageObject, turned) => {
+          if (!turned) {
+            this.busy = false;
+            stage.classList.remove('is-flipping');
           }
         },
         turned: (e, page) => {
           this.cur = page - 1;
           this.busy = false;
           stage.classList.remove('is-flipping');
-          this.preloadNearby(this.cur);
           if (typeof this.onChange === 'function') {
             this.onChange(this.cur);
           }
@@ -369,28 +371,32 @@ class Book {
   }
 
   flip(dir) {
-    if (!this.$el || !this.$el.turn('is') || this.busy) return;
+    if (!this.$el || !this.$el.turn('is')) return;
+    if (this.$el.turn('animating')) return;
+    this.busy = true;
     if (dir === 'fwd') {
       if (this.cur < this.count - 1) {
-        this.preloadNearby(this.cur + 1);
         this.$el.turn('next');
       }
     } else {
       if (this.cur > 0) {
-        this.preloadNearby(this.cur - 1);
         this.$el.turn('previous');
       }
     }
   }
 
   tease() {
-    if (!this.$el || !this.$el.turn('is') || this.busy || this.cur >= this.count - 1) return;
+    if (!this.$el || !this.$el.turn('is') || this.$el.turn('animating') || this.cur >= this.count - 1) return;
     try {
       this.$el.turn('peel', 'br');
       setTimeout(() => {
         try { this.$el.turn('peel', false); } catch (e) {}
+        this.busy = false;
+        stage.classList.remove('is-flipping');
       }, 750);
-    } catch (e) {}
+    } catch (e) {
+      this.busy = false;
+    }
   }
 
   bindCardGestures() {
@@ -876,14 +882,14 @@ function init() {
   if (carouselPrevBtn) {
     carouselPrevBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      if (state !== 'reading' || !book || book.busy) return;
+      if (state !== 'reading' || !book) return;
       book.flip('back');
     });
   }
   if (carouselNextBtn) {
     carouselNextBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      if (state !== 'reading' || !book || book.busy) return;
+      if (state !== 'reading' || !book) return;
       book.flip('fwd');
     });
   }
