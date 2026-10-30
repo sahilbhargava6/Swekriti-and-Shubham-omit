@@ -39,28 +39,6 @@ const CONFIG = {
       mapQuery: 'Pearl Hall, The Ritz, Moti Nagar, New Delhi',
     },
     {
-      title: 'Celebrations Itinerary',
-      cardImage: 'pages/wedding_card_pages_4.jpg', cardVideo: 'pages/wedding_card_pages_4.mp4',
-      theme: 'wedding',
-      venue: 'Multiple Venues', city: 'Naraina & Moti Nagar',
-      locations: [
-        {
-          event: 'Tel-Madha Bhaat (Dec 01 · 12:30 PM)',
-          name: 'Hotel Palm Grand',
-          address: 'Hotel Palm Grand, Naraina, New Delhi',
-          mapQuery: 'Hotel Palm Grand, Naraina, New Delhi',
-          mapUrl: 'https://www.google.com/maps/search/?api=1&query=Hotel+Palm+Grand%2C+Naraina%2C+New+Delhi',
-        },
-        {
-          event: 'Ring Ceremony (Dec 01) & Wedding (Dec 02)',
-          name: 'The Ritz',
-          address: 'The Ritz, 69/1A, Najafgarh Road, Moti Nagar, New Delhi',
-          mapQuery: 'The Ritz, Moti Nagar, New Delhi',
-          mapUrl: 'https://www.google.com/maps/search/?api=1&query=The+Ritz%2C+Moti+Nagar%2C+New+Delhi',
-        },
-      ],
-    },
-    {
       title: 'In Loving Memory',
       cardImage: 'pages/wedding_card_pages_5.jpg', cardVideo: 'pages/wedding_card_pages_5.mp4',
       theme: 'memory',
