@@ -248,7 +248,11 @@ function illustrationSVG(id) {
 
 function pageHTML(ev, i) {
   if (ev.cardImage) {
-    return `<img class="full-card" src="${esc(ev.cardImage)}" alt="${esc(ev.title)} invitation" draggable="false">`;
+    // Only load the first two pages immediately; lazy-load subsequent giant animated GIFs
+    if (i < 2) {
+      return `<img class="full-card" src="${esc(ev.cardImage)}" alt="${esc(ev.title)} invitation" draggable="false">`;
+    }
+    return `<img class="full-card" data-src="${esc(ev.cardImage)}" alt="${esc(ev.title)} invitation" draggable="false">`;
   }
   const t = THEMES[ev.theme] || THEMES.haldi;
   const id = `p${i}`;
@@ -295,14 +299,15 @@ class Book {
       `<div class="book-page" data-page="${i + 1}">${html}</div>`
     ).join('');
 
+    const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
     this.$el = jQuery(this.el);
     this.$el.turn({
       width: Math.round(this.W),
       height: Math.round(this.H),
       display: 'single',
-      duration: 480,
-      elevation: 20,
-      gradients: true,
+      duration: isTouch ? 560 : 520,
+      elevation: isTouch ? 0 : 12,
+      gradients: false, // Disabling dynamic software gradients eliminates frame-by-frame JS gradient re-rasterization
       acceleration: true,
       autoCenter: true,
       when: {
@@ -318,6 +323,7 @@ class Book {
         },
         turned: (e, page) => {
           this.cur = page - 1;
+          this.preloadNearby(this.cur);
           this.busy = false;
           stage.classList.remove('is-flipping');
           if (typeof this.onChange === 'function') {
@@ -338,7 +344,7 @@ class Book {
         const pageEl = this.el.querySelector(`.book-page[data-page="${idx + 1}"]`);
         if (pageEl) {
           const img = pageEl.querySelector('img.full-card[data-src]');
-          if (img && !img.src) {
+          if (img && !img.getAttribute('src')) {
             img.src = img.getAttribute('data-src');
           }
         }

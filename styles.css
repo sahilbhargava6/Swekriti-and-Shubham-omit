@@ -339,10 +339,14 @@ body.is-reading-mode {
 /* GPU-accelerated smooth flipping layers */
 .book .turn-page,
 .book .turn-page-wrapper {
-  transform: translateZ(0);
-  -webkit-transform: translateZ(0);
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
+}
+.book .turn-page-wrapper {
+  filter: drop-shadow(-3px 0 10px rgba(35, 15, 10, 0.22));
+}
+.is-flipping .turn-page,
+.is-flipping .turn-page-wrapper {
   will-change: transform;
 }
 
