@@ -16,7 +16,7 @@
 const CONFIG = {
   monogram: 'S',
   sealImage: 'seal.png', // wax seal on the envelope (falls back to a drawn seal if missing)
-  bgMusic: 'music.mp3', // background music (Saathiya flute theme)
+  bgMusic: 'music1.mp3', // background music
   formUrl: 'https://forms.gle/vEq6WfqpjbCnMzHA9', // RSVP / guest attendance form link
   events: [
     {
