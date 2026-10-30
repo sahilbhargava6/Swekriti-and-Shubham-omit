@@ -2,7 +2,10 @@
    CONFIG — edit the invitation content here.
    Each entry is one page of the card, in order. Pages turn with a page curl.
 
-   cardImage: the full page image (in /pages).
+   cardImage: still image of the page (in /pages) — shown while the video loads.
+   cardVideo: the animated page as a muted looping MP4 (in /pages).
+              Much lighter than GIF on phones; convert a GIF with:
+              ffmpeg -i in.gif -vf "scale=1080:-2,format=yuv420p" -c:v libx264 -crf 24 -movflags +faststart -an out.mp4
    venue/city: shown on the venue box under the card.
    address:   revealed when the venue box is tapped.
    mapQuery:  searched in Google Maps when the address is tapped;
@@ -21,7 +24,7 @@ const CONFIG = {
   events: [
     {
       title: 'Wedding Invitation',
-      cardImage: 'pages/wedding_card_pages.gif',
+      cardImage: 'pages/wedding_card_pages.jpg', cardVideo: 'pages/wedding_card_pages.mp4',
       theme: 'invite',
       venue: 'The Ritz', city: 'Moti Nagar',
       address: 'The Ritz, Moti Nagar, New Delhi',
@@ -29,7 +32,7 @@ const CONFIG = {
     },
     {
       title: 'Wedding Celebration',
-      cardImage: 'pages/wedding_card_pages_3.gif',
+      cardImage: 'pages/wedding_card_pages_3.jpg', cardVideo: 'pages/wedding_card_pages_3.mp4',
       theme: 'celebration',
       venue: 'The Ritz', city: 'Moti Nagar',
       address: 'Pearl Hall, 1st floor — The Ritz, Moti Nagar, New Delhi',
@@ -37,7 +40,7 @@ const CONFIG = {
     },
     {
       title: 'Celebrations Itinerary',
-      cardImage: 'pages/wedding_card_pages_4.gif',
+      cardImage: 'pages/wedding_card_pages_4.jpg', cardVideo: 'pages/wedding_card_pages_4.mp4',
       theme: 'wedding',
       venue: 'Multiple Venues', city: 'Naraina & Moti Nagar',
       locations: [
@@ -59,27 +62,27 @@ const CONFIG = {
     },
     {
       title: 'In Loving Memory',
-      cardImage: 'pages/wedding_card_pages_5.gif',
+      cardImage: 'pages/wedding_card_pages_5.jpg', cardVideo: 'pages/wedding_card_pages_5.mp4',
       theme: 'memory',
     },
     {
       title: 'With Best Compliments',
-      cardImage: 'pages/wedding_card_pages_6.gif',
+      cardImage: 'pages/wedding_card_pages_6.jpg', cardVideo: 'pages/wedding_card_pages_6.mp4',
       theme: 'family',
     },
     {
       title: 'Family & Blessings',
-      cardImage: 'pages/wedding_card_pages_7.gif',
+      cardImage: 'pages/wedding_card_pages_7.jpg', cardVideo: 'pages/wedding_card_pages_7.mp4',
       theme: 'family',
     },
     {
       title: 'Warm Regards',
-      cardImage: 'pages/wedding_card_pages_8.gif',
+      cardImage: 'pages/wedding_card_pages_8.jpg', cardVideo: 'pages/wedding_card_pages_8.mp4',
       theme: 'family',
     },
     {
       title: 'Awaiting Your Presence',
-      cardImage: 'pages/wedding_card_pages_9.gif',
+      cardImage: 'pages/wedding_card_pages_9.jpg', cardVideo: 'pages/wedding_card_pages_9.mp4',
       theme: 'invite',
       venue: 'The Ritz', city: 'Moti Nagar',
       address: 'The Ritz, Moti Nagar, New Delhi',
@@ -119,15 +122,15 @@ function drawBlossoms() {
   const R = rng(7);
   // Realistic falling cherry blossom petals (rendered behind the cards)
   const petalImgs = [
-    'url("pages/petal_0.png")',
-    'url("pages/petal_1.png")',
-    'url("pages/petal_2.png")',
-    'url("pages/petal_3.png")',
-    'url("pages/petal_4.png")',
-    'url("pages/petal_5.png")',
-    'url("pages/petal_6.png")',
-    'url("pages/petal_7.png")',
-    'url("pages/petal_8.png")',
+    'url("pages/petal_0.webp")',
+    'url("pages/petal_1.webp")',
+    'url("pages/petal_2.webp")',
+    'url("pages/petal_3.webp")',
+    'url("pages/petal_4.webp")',
+    'url("pages/petal_5.webp")',
+    'url("pages/petal_6.webp")',
+    'url("pages/petal_7.webp")',
+    'url("pages/petal_8.webp")',
   ];
 
   const rain = $('petalRain');
@@ -247,8 +250,15 @@ function illustrationSVG(id) {
 }
 
 function pageHTML(ev, i) {
+  if (ev.cardVideo) {
+    // Only the first two pages load up front; the rest are filled in by Book.preloadNearby
+    const attrs = i < 2
+      ? `src="${esc(ev.cardVideo)}" poster="${esc(ev.cardImage)}" preload="auto"`
+      : `data-src="${esc(ev.cardVideo)}" data-poster="${esc(ev.cardImage)}" preload="none"`;
+    return `<video class="full-card" ${attrs} muted loop playsinline disablepictureinpicture aria-label="${esc(ev.title)} invitation"></video>`;
+  }
   if (ev.cardImage) {
-    // Only load the first two pages immediately; lazy-load subsequent giant animated GIFs
+    // Only load the first two pages immediately; lazy-load the rest
     if (i < 2) {
       return `<img class="full-card" src="${esc(ev.cardImage)}" alt="${esc(ev.title)} invitation" draggable="false">`;
     }
@@ -282,14 +292,24 @@ function pageHTML(ev, i) {
 }
 
 /* =====================================================================
-   Book — 3D Rolling Leaf Page Turn
+   Book — turn.js page curl
+   Arrows, taps, keys and swipes all curl the page from its bottom corner
+   with turn.js shading. A swipe drags the page under the finger; letting
+   go past a quarter of the card (or flicking) finishes the turn.
    ===================================================================== */
+const TURN_MS = 1500; // curl after the corner is released (turn.js eases it out)
+const LIFT_MS = 260;  // corner lift before an arrow / tap / key turn
+
 class Book {
   constructor(el, pagesHTML, monogram, onChange) {
     this.el = el;
     this.onChange = onChange;
     this.cur = 0;
     this.busy = false;
+    this.active = false;     // card is out of the envelope, so its video may play
+    this.fold = null;        // page held by a drag or an arrow lift
+    this.committing = false; // inside turn('next'/'previous') after a held fold
+    this.dragEndedAt = 0;
     this.monogram = monogram || 'S';
     this.W = el.clientWidth || 370;
     this.H = el.clientHeight || 520;
@@ -298,34 +318,33 @@ class Book {
     this.el.innerHTML = pagesHTML.map((html, i) =>
       `<div class="book-page" data-page="${i + 1}">${html}</div>`
     ).join('');
+    // Keep references: turn.js detaches pages that are far from the current one
+    this.pages = Array.from(this.el.querySelectorAll('.book-page'));
 
-    const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
     this.$el = jQuery(this.el);
     this.$el.turn({
       width: Math.round(this.W),
       height: Math.round(this.H),
       display: 'single',
-      duration: isTouch ? 560 : 520,
-      elevation: isTouch ? 0 : 12,
-      gradients: false, // Disabling dynamic software gradients eliminates frame-by-frame JS gradient re-rasterization
+      duration: TURN_MS,
+      elevation: Math.round(this.W * 0.12),
+      gradients: true,
       acceleration: true,
       autoCenter: true,
       when: {
-        start: (e, pageObject) => {
+        start: () => {
           this.busy = true;
           stage.classList.add('is-flipping');
+          this.pauseVideos();
         },
         end: (e, pageObject, turned) => {
-          if (!turned) {
-            this.busy = false;
-            stage.classList.remove('is-flipping');
-          }
+          // a held fold being handed over to the turn also ends here — ignore that one
+          if (!turned && !this.committing && !this.fold) this.settle();
         },
         turned: (e, page) => {
           this.cur = page - 1;
           this.preloadNearby(this.cur);
-          this.busy = false;
-          stage.classList.remove('is-flipping');
+          this.settle();
           if (typeof this.onChange === 'function') {
             this.onChange(this.cur);
           }
@@ -333,21 +352,60 @@ class Book {
       }
     });
 
+    this.preloadNearby(0);
     this.bindCardGestures();
   }
 
+  settle() {
+    this.busy = false;
+    stage.classList.remove('is-flipping');
+    this.playCurrent();
+  }
+
+  /* ---------- page videos: only the visible page plays ---------- */
+  pauseVideos() {
+    this.pages.forEach((p) => {
+      const v = p.querySelector('video.full-card');
+      if (v && !v.paused) v.pause();
+    });
+  }
+
+  playCurrent() {
+    this.pages.forEach((p, i) => {
+      const v = p.querySelector('video.full-card');
+      if (!v) return;
+      if (i === this.cur && this.active && !this.busy) {
+        v.muted = true;
+        const pr = v.play();
+        if (pr) pr.catch(() => {}); // autoplay blocked (e.g. low-power mode): the poster stays
+      } else if (!v.paused) {
+        v.pause();
+      }
+    });
+  }
+
+  setActive(on) {
+    this.active = on;
+    if (on) this.playCurrent();
+    else this.pauseVideos();
+  }
+
+  // Posters for the pages either side; video data only for this page and the next
   preloadNearby(targetPage) {
     const p = targetPage !== undefined ? targetPage : this.cur;
-    const indices = [p - 1, p, p + 1, p + 2];
-    indices.forEach(idx => {
-      if (idx >= 0 && idx < this.count) {
-        const pageEl = this.el.querySelector(`.book-page[data-page="${idx + 1}"]`);
-        if (pageEl) {
-          const img = pageEl.querySelector('img.full-card[data-src]');
-          if (img && !img.getAttribute('src')) {
-            img.src = img.getAttribute('data-src');
-          }
-        }
+    [p - 1, p, p + 1, p + 2].forEach((idx) => {
+      const pageEl = this.pages[idx];
+      if (!pageEl) return;
+      const media = pageEl.querySelector('.full-card[data-src]');
+      if (!media || media.getAttribute('src')) return;
+      if (media.tagName !== 'VIDEO') {
+        media.src = media.dataset.src;
+        return;
+      }
+      if (!media.getAttribute('poster')) media.poster = media.dataset.poster;
+      if (idx === p || idx === p + 1) {
+        media.preload = 'auto';
+        media.src = media.dataset.src;
       }
     });
   }
@@ -377,16 +435,77 @@ class Book {
   }
 
   flip(dir) {
-    if (!this.$el || !this.$el.turn('is')) return;
-    if (dir === 'fwd') {
-      if (this.cur < this.count - 1) {
-        this.$el.turn('next');
-      }
-    } else {
-      if (this.cur > 0) {
-        this.$el.turn('previous');
-      }
+    if (!this.$el || !this.$el.turn('is') || this.fold) return;
+    const fwd = dir === 'fwd';
+    if (fwd ? this.cur >= this.count - 1 : this.cur <= 0) return;
+    if (this.$el.turn('animating')) {
+      // a curl is already running: let turn.js chain straight into the next one
+      this.$el.turn(fwd ? 'next' : 'previous');
+      return;
     }
+    this.liftAndTurn(fwd);
+  }
+
+  // Lift the corner a little (like a hand picking up the page), then let turn.js finish the curl
+  liftAndTurn(fwd) {
+    if (!this.beginFold(fwd ? 'br' : 'bl')) {
+      this.$el.turn(fwd ? 'next' : 'previous');
+      return;
+    }
+    const W = this.W, H = this.H;
+    const x0 = fwd ? W - 1 : 1, x1 = fwd ? W * 0.6 : W * 0.4;
+    const y0 = H - 1, y1 = H * 0.82;
+    const t0 = performance.now();
+    const step = (now) => {
+      if (!this.fold) return;
+      const t = Math.min(1, (now - t0) / LIFT_MS);
+      const k = t * t; // ease-in, so the hand-off to turn.js's ease-out keeps moving
+      this.foldTo(x0 + (x1 - x0) * k, y0 + (y1 - y0) * k);
+      if (t < 1) requestAnimationFrame(step);
+      else this.commitFold(fwd);
+    };
+    requestAnimationFrame(step);
+  }
+
+  /* ---------- holding the page through turn.js's own fold ----------
+     turn('next'/'previous') and hideFoldedPage continue from the held
+     point, so a release animates on from wherever the corner is.      */
+  beginFold(corner) {
+    const data = this.$el.data();
+    const pg = data.pages && data.pages[data.page];
+    if (!pg) return false;
+    data.mouseAction = true; // makes turn.js pick the page in the fold's direction
+    this.fold = { pg, corner };
+    return true;
+  }
+
+  foldTo(x, y) {
+    if (!this.fold) return;
+    const W = this.W, H = this.H;
+    this.fold.pg.flip('_showFoldedPage', {
+      corner: this.fold.corner,
+      x: clamp(x, -W + 1, 2 * W - 1),
+      y: clamp(y, 1, H - 1),
+    }, false);
+  }
+
+  commitFold(fwd) {
+    this.$el.data().mouseAction = false;
+    this.fold = null;
+    this.committing = true;
+    try {
+      this.$el.turn(fwd ? 'next' : 'previous');
+    } finally {
+      this.committing = false;
+    }
+  }
+
+  cancelFold() {
+    if (!this.fold) return;
+    this.$el.data().mouseAction = false;
+    const { pg } = this.fold;
+    this.fold = null;
+    pg.flip('hideFoldedPage', true);
   }
 
   tease() {
@@ -404,9 +523,16 @@ class Book {
   }
 
   bindCardGestures() {
+    // turn.js only lets you grab the corners; keep its own handlers out so a
+    // drag anywhere on the card curls the page from the matching corner instead.
+    const keepTurnOut = (e) => e.stopPropagation();
+    this.el.addEventListener('touchstart', keepTurnOut, { capture: true, passive: true });
+    this.el.addEventListener('mousedown', keepTurnOut, true);
+
     // Tap left side of card to go back, tap right side to go forward (ignoring buttons)
     this.el.addEventListener('click', (e) => {
       if (this.busy || state !== 'reading' || isZoomOpen) return;
+      if (performance.now() - this.dragEndedAt < 400) return;
       if (e.target.closest('.carousel-arrow') || e.target.closest('.card-zoom-btn')) return;
       const rect = this.el.getBoundingClientRect();
       const x = e.clientX - rect.left;
@@ -417,35 +543,62 @@ class Book {
       }
     });
 
-    // Touch swipe left/right for mobile navigation
-    let touchStartX = 0;
-    let touchStartY = 0;
-    let touchStartTime = 0;
+    // Swipe / drag left or right: the page follows the finger
+    let start = null;
+    let drag = null;
 
-    this.el.addEventListener('touchstart', (e) => {
-      if (this.busy || state !== 'reading' || isZoomOpen) return;
-      if (e.touches.length === 1) {
-        touchStartX = e.touches[0].clientX;
-        touchStartY = e.touches[0].clientY;
-        touchStartTime = performance.now();
-      }
-    }, { passive: true });
+    this.el.addEventListener('pointerdown', (e) => {
+      if (!e.isPrimary || (e.pointerType === 'mouse' && e.button !== 0)) return;
+      if (state !== 'reading' || isZoomOpen || this.fold) return;
+      start = { id: e.pointerId, x: e.clientX, y: e.clientY };
+    });
 
-    this.el.addEventListener('touchend', (e) => {
-      if (this.busy || state !== 'reading' || isZoomOpen) return;
-      if (e.changedTouches.length === 1) {
-        const dx = e.changedTouches[0].clientX - touchStartX;
-        const dy = e.changedTouches[0].clientY - touchStartY;
-        const dt = performance.now() - touchStartTime;
-        if (Math.abs(dx) > 35 && Math.abs(dx) > Math.abs(dy) * 1.2 && dt < 600) {
-          if (dx < 0) {
-            this.flip('fwd');
-          } else {
-            this.flip('back');
-          }
+    this.el.addEventListener('pointermove', (e) => {
+      if (!start || e.pointerId !== start.id) return;
+      const dx = e.clientX - start.x;
+      const dy = e.clientY - start.y;
+      const now = performance.now();
+
+      if (!drag) {
+        if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return;
+        const fwd = dx < 0;
+        if (Math.abs(dx) < Math.abs(dy) * 1.2 // vertical: let the page scroll
+          || this.$el.turn('animating')
+          || (fwd ? this.cur >= this.count - 1 : this.cur <= 0)
+          || !this.beginFold(fwd ? 'br' : 'bl')) {
+          start = null;
+          return;
         }
+        drag = { fwd, lastX: e.clientX, lastT: now, v: 0 };
+        try { this.el.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
       }
-    }, { passive: true });
+
+      drag.v = (e.clientX - drag.lastX) / Math.max(1, now - drag.lastT);
+      drag.lastX = e.clientX;
+      drag.lastT = now;
+      const pull = Math.max(0, drag.fwd ? -dx : dx);
+      const x = drag.fwd ? this.W - pull * 1.3 : pull * 1.3;
+      const y = this.H - Math.min(this.H * 0.2, pull * 0.25) + dy * 0.35;
+      this.foldTo(x, y);
+    });
+
+    const release = (e) => {
+      if (!start || e.pointerId !== start.id) return;
+      const pull = Math.abs(e.clientX - start.x);
+      start = null;
+      if (!drag) return;
+      const { fwd, v } = drag;
+      drag = null;
+      this.dragEndedAt = performance.now();
+      const flick = fwd ? v < -0.45 : v > 0.45;
+      if (e.type === 'pointerup' && (pull > this.W * 0.25 || (flick && pull > 24))) {
+        this.commitFold(fwd);
+      } else {
+        this.cancelFold();
+      }
+    };
+    this.el.addEventListener('pointerup', release);
+    this.el.addEventListener('pointercancel', release);
   }
 }
 
@@ -586,6 +739,7 @@ function onVolumeInput(e) {
 async function openEnvelope() {
   if (state !== 'closed') return;
   playMusic();
+  if (book) book.setActive(true); // started inside the tap, so phones allow the video to play
   state = 'opening';
   const c = stage.classList;
   c.add('is-opening', 'is-seal-broken');
@@ -624,6 +778,7 @@ async function closeEnvelope() {
   await wait(1050);
   c.remove('is-flap-open');
   await wait(900);
+  book.setActive(false);
   book.show(0);
   setTheme(0);
   seal.classList.add('no-trans');
@@ -801,7 +956,16 @@ function setZoomScale(targetScale, animate = true) {
 function updateZoomModalView() {
   if (!zoomModal || !CONFIG.events[zoomIndex]) return;
   const ev = CONFIG.events[zoomIndex];
-  if (zoomImage) zoomImage.src = ev.cardImage;
+  if (zoomImage) {
+    zoomImage.poster = ev.cardImage || '';
+    if (ev.cardVideo) {
+      if (zoomImage.getAttribute('src') !== ev.cardVideo) zoomImage.src = ev.cardVideo;
+      const pr = zoomImage.play();
+      if (pr) pr.catch(() => {});
+    } else {
+      zoomImage.removeAttribute('src');
+    }
+  }
   if (zoomPageBadge) zoomPageBadge.textContent = `${zoomIndex + 1} / ${CONFIG.events.length}`;
 
   if (zoomPrevBtn) {
@@ -824,6 +988,7 @@ function openZoom(index = currentPageIndex) {
   zoomModal.classList.add('is-open');
   zoomModal.setAttribute('aria-hidden', 'false');
   document.body.classList.add('is-zoomed');
+  if (book) book.setActive(false); // the zoomed copy plays instead
   updateZoomModalView();
 }
 
@@ -833,6 +998,8 @@ function closeZoom() {
   zoomModal.classList.remove('is-open');
   zoomModal.setAttribute('aria-hidden', 'true');
   document.body.classList.remove('is-zoomed');
+  if (zoomImage && !zoomImage.paused) zoomImage.pause();
+  if (book) book.setActive(state === 'reading');
   zoomScale = 1.0;
   zoomPanX = 0;
   zoomPanY = 0;
@@ -875,6 +1042,9 @@ function init() {
     if (!isUserMuted && bgMusic && bgMusic.paused) {
       playMusic();
     }
+    // Low-power modes block muted autoplay until the first tap
+    const bg = document.querySelector('.backdrop-gif');
+    if (bg && bg.paused && bg.play) bg.play().catch(() => {});
   };
   window.addEventListener('pointerdown', startOnFirstGesture, { once: true });
   $('closeBtn').addEventListener('click', () => { toggleVenue(false); closeEnvelope(); });

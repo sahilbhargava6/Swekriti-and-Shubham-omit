@@ -14,6 +14,7 @@ const MIME = {
   '.svg': 'image/svg+xml',
   '.mp3': 'audio/mpeg',
   '.webp': 'image/webp',
+  '.mp4': 'video/mp4',
 };
 
 const server = http.createServer((req, res) => {
@@ -36,10 +37,30 @@ const server = http.createServer((req, res) => {
 
   const ext = path.extname(filePath).toLowerCase();
   const contentType = MIME[ext] || 'application/octet-stream';
-  res.writeHead(200, {
+  const headers = {
     'Content-Type': contentType,
-    'Cache-Control': 'no-cache, no-store, must-revalidate'
-  });
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
+    'Accept-Ranges': 'bytes',
+  };
+
+  // Byte ranges: Safari will not play a video without them
+  const range = /^bytes=(\d*)-(\d*)$/.exec(req.headers.range || '');
+  if (range && (range[1] || range[2])) {
+    let start = range[1] ? parseInt(range[1], 10) : stat.size - parseInt(range[2], 10);
+    let end = range[1] && range[2] ? parseInt(range[2], 10) : stat.size - 1;
+    start = Math.max(0, start);
+    end = Math.min(end, stat.size - 1);
+    if (start > end) {
+      res.writeHead(416, { 'Content-Range': `bytes */${stat.size}` });
+      res.end();
+      return;
+    }
+    res.writeHead(206, { ...headers, 'Content-Range': `bytes ${start}-${end}/${stat.size}`, 'Content-Length': end - start + 1 });
+    fs.createReadStream(filePath, { start, end }).pipe(res);
+    return;
+  }
+
+  res.writeHead(200, { ...headers, 'Content-Length': stat.size });
   fs.createReadStream(filePath).pipe(res);
 });
 

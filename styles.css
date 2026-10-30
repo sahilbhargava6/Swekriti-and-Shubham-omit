@@ -399,6 +399,11 @@ body.is-reading-mode {
   -webkit-backface-visibility: hidden;
 }
 
+/* Back of the page while it curls over (turn.js shades it with gradients) */
+.book .p-temporal {
+  background: #fbf6ee;
+}
+
 /* Turn.js dynamic drop shadow */
 .book .shadow {
   box-shadow: 0 0 20px rgba(35, 15, 10, 0.35);
@@ -499,9 +504,7 @@ body.is-reading-mode {
   border: 1px solid rgba(255, 255, 255, .7);
   border-radius: 50%;
   color: var(--accent, var(--rose));
-  background: rgba(255, 250, 247, .76);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: rgba(255, 250, 247, .9);
   box-shadow: 0 6px 18px -6px rgba(140, 70, 95, .35);
   cursor: pointer;
   transition: transform .3s ease, background-color .3s, color 1.2s, box-shadow .3s;
@@ -530,9 +533,7 @@ body.is-reading-mode {
   padding: 0 12px;
   border: 1px solid rgba(255, 255, 255, .7);
   border-radius: 20px;
-  background: rgba(255, 250, 247, .76);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: rgba(255, 250, 247, .9);
   box-shadow: 0 6px 18px -6px rgba(140, 70, 95, .25);
   transition: opacity .3s ease, transform .3s ease, border-color .3s;
 }
@@ -609,8 +610,6 @@ body.is-reading-mode {
   border-radius: 50%;
   color: var(--rose);
   background: rgba(255, 250, 247, .85);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
   box-shadow: 0 6px 18px -6px rgba(140, 70, 95, .35);
   cursor: pointer;
   z-index: 40;
@@ -641,8 +640,6 @@ body.is-reading-mode {
   border: 1px solid rgba(255, 255, 255, .82);
   border-radius: 14px;
   background: rgba(255, 251, 247, .94);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
   box-shadow: 0 8px 24px -6px rgba(90, 40, 55, .18), 0 2px 6px rgba(0, 0, 0, .05);
   transition: opacity .35s ease, transform .35s ease, visibility .35s;
 }
@@ -783,8 +780,6 @@ body.is-reading-mode {
     color-mix(in srgb, var(--accent, #b45a78) 12%, rgba(255, 255, 255, .96)) 0%,
     color-mix(in srgb, var(--accent, #b45a78) 18%, rgba(255, 251, 247, .94)) 100%
   );
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
   box-shadow: 0 8px 22px -6px rgba(120, 50, 70, .24), 0 2px 6px rgba(0, 0, 0, .06);
   text-decoration: none;
   cursor: pointer;
@@ -843,8 +838,6 @@ body.is-reading-mode {
   border-radius: 50%;
   color: var(--accent, #b45a78);
   background: rgba(255, 252, 249, .92);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
   box-shadow: 0 6px 18px -4px rgba(100, 45, 60, .28), 0 2px 6px rgba(0, 0, 0, .06);
   cursor: pointer;
   opacity: 0;
@@ -909,8 +902,6 @@ body.is-reading-mode {
   border-radius: 16px;
   color: var(--accent, #b45a78);
   background: rgba(255, 252, 249, .90);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
   box-shadow: 0 4px 14px -3px rgba(100, 45, 60, .25), 0 2px 5px rgba(0, 0, 0, .05);
   cursor: pointer;
   opacity: 0;
@@ -967,9 +958,7 @@ body.is-zoomed {
 .zoom-backdrop {
   position: absolute;
   inset: 0;
-  background: rgba(24, 12, 18, .86);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background: rgba(24, 12, 18, .93);
 }
 
 .zoom-header {
@@ -989,8 +978,6 @@ body.is-zoomed {
   border: 1px solid rgba(255, 255, 255, .4);
   border-radius: 20px;
   background: rgba(255, 250, 247, .85);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, .2);
   font-family: var(--caps);
   font-size: 11px;
@@ -1007,8 +994,6 @@ body.is-zoomed {
   border: 1px solid rgba(255, 255, 255, .4);
   border-radius: 24px;
   background: rgba(255, 250, 247, .85);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
   box-shadow: 0 4px 14px rgba(0, 0, 0, .25);
 }
 
@@ -1104,11 +1089,12 @@ body.is-zoomed {
 }
 
 .zoom-image {
-  max-width: min(88vw, 560px);
-  max-height: 76vh;
-  width: auto;
+  /* explicit size: a video has no dimensions until its data arrives */
+  width: min(88vw, 560px, calc(76vh * 1080 / 1522));
   height: auto;
+  aspect-ratio: 1080 / 1522;
   object-fit: contain;
+  background: #fbf6ee;
   border-radius: 6px;
   box-shadow: 0 16px 48px -8px rgba(0, 0, 0, .7);
   pointer-events: none;
@@ -1130,8 +1116,6 @@ body.is-zoomed {
   border-radius: 50%;
   color: #6a3448;
   background: rgba(255, 250, 247, .85);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
   box-shadow: 0 6px 20px rgba(0, 0, 0, .3);
   cursor: pointer;
   transition: transform .2s, background-color .2s, opacity .2s;
@@ -1165,9 +1149,7 @@ body.is-zoomed {
   z-index: 20;
   padding: 6px 14px;
   border-radius: 16px;
-  background: rgba(0, 0, 0, .55);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: rgba(0, 0, 0, .7);
   color: rgba(255, 255, 255, .82);
   font-size: 11px;
   letter-spacing: .03em;

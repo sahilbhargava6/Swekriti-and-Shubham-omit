@@ -42,13 +42,14 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Great+Vibes&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=21">
+  <link rel="preload" as="image" href="pages/wedding_card_pages.jpg">
+  <link rel="stylesheet" href="styles.css?v=22">
 </head>
 <body>
   <main class="stage" id="stage">
-    <!-- Background: animated background.gif -->
+    <!-- Background: animated background (MP4, far lighter than the GIF) -->
     <div class="backdrop" aria-hidden="true">
-      <img src="pages/background.gif" alt="" class="backdrop-gif">
+      <video class="backdrop-gif" src="pages/background.mp4" poster="pages/background.jpg" autoplay muted loop playsinline disablepictureinpicture preload="auto"></video>
       <div class="petal-rain" id="petalRain"></div>
     </div>
 
@@ -127,7 +128,7 @@
         <input type="range" class="volume-slider" id="volumeSlider" min="0" max="1" step="0.01" value="0.30" aria-label="Music volume">
       </div>
     </div>
-    <audio id="bgMusic" src="music1.mp3" loop preload="auto"></audio>
+    <audio id="bgMusic" src="music1.mp3" loop preload="none"></audio>
 
     <div class="reader-ui">
       <button class="close-btn" id="closeBtn" type="button" aria-label="Put the card back in the envelope">
@@ -188,7 +189,7 @@
 
     <div class="zoom-viewport" id="zoomViewport">
       <div class="zoom-canvas" id="zoomCanvas">
-        <img class="zoom-image" id="zoomImage" src="" alt="Zoomed wedding invitation card" draggable="false">
+        <video class="zoom-image" id="zoomImage" muted loop playsinline disablepictureinpicture preload="none" aria-label="Zoomed wedding invitation card"></video>
       </div>
     </div>
 
@@ -205,6 +206,6 @@
 
   <script src="jquery.min.js"></script>
   <script src="turn.min.js"></script>
-  <script src="script.js?v=22"></script>
+  <script src="script.js?v=23"></script>
 </body>
 </html>
