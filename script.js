@@ -372,8 +372,6 @@ class Book {
 
   flip(dir) {
     if (!this.$el || !this.$el.turn('is')) return;
-    if (this.$el.turn('animating')) return;
-    this.busy = true;
     if (dir === 'fwd') {
       if (this.cur < this.count - 1) {
         this.$el.turn('next');
@@ -877,22 +875,37 @@ function init() {
   $('venueHead').addEventListener('click', () => toggleVenue());
 
   // Carousel navigation arrows on card
-  const carouselPrevBtn = $('carouselPrevBtn');
-  const carouselNextBtn = $('carouselNextBtn');
-  if (carouselPrevBtn) {
-    carouselPrevBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
+  const setupArrowBtn = (btn, action) => {
+    if (!btn) return;
+    let lastTime = 0;
+    const trigger = (e) => {
+      if (e) {
+        e.stopPropagation();
+        if (e.cancelable) e.preventDefault();
+      }
+      const now = performance.now();
+      if (now - lastTime < 320) return;
+      lastTime = now;
       if (state !== 'reading' || !book) return;
-      book.flip('back');
-    });
-  }
-  if (carouselNextBtn) {
-    carouselNextBtn.addEventListener('click', (e) => {
+      book.flip(action);
+    };
+
+    btn.addEventListener('pointerdown', (e) => {
       e.stopPropagation();
-      if (state !== 'reading' || !book) return;
-      book.flip('fwd');
     });
-  }
+    btn.addEventListener('touchstart', (e) => {
+      e.stopPropagation();
+    }, { passive: false });
+    btn.addEventListener('touchend', (e) => {
+      trigger(e);
+    }, { passive: false });
+    btn.addEventListener('click', (e) => {
+      trigger(e);
+    });
+  };
+
+  setupArrowBtn($('carouselPrevBtn'), 'back');
+  setupArrowBtn($('carouselNextBtn'), 'fwd');
 
   // Card Zoom button trigger
   if (cardZoomBtn) {

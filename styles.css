@@ -213,8 +213,9 @@ body.is-reading-mode {
 @keyframes breathe { 50% { opacity: .45; } }
 
 .is-env-down .envelope { --drop: var(--sep); }
-.is-env-gone .envelope { --drop: var(--gone); }
-.is-env-gone .env-part { opacity: 0; transition-timing-function: cubic-bezier(.55, 0, .8, .35), ease; }
+.is-env-gone .envelope { --drop: var(--gone); pointer-events: none; }
+.is-env-gone .env-part { opacity: 0; pointer-events: none; transition-timing-function: cubic-bezier(.55, 0, .8, .35), ease; }
+.is-reading .envelope { pointer-events: none; }
 
 /* ---------- Wax seal ---------- */
 .seal {
@@ -831,8 +832,8 @@ body.is-reading-mode {
   -webkit-tap-highlight-color: transparent;
   display: grid;
   place-items: center;
-  width: 42px;
-  height: 42px;
+  width: 44px;
+  height: 44px;
   padding: 0;
   border: 1px solid rgba(255, 255, 255, .85);
   border-radius: 50%;
@@ -846,6 +847,13 @@ body.is-reading-mode {
   visibility: hidden;
   pointer-events: none;
   transition: opacity .35s ease, visibility .35s ease, transform .25s ease, background-color .25s, box-shadow .25s;
+}
+.carousel-arrow::after {
+  content: '';
+  position: absolute;
+  inset: -14px;
+  border-radius: 50%;
+  pointer-events: auto;
 }
 .is-reading .carousel-arrow {
   opacity: 1;
